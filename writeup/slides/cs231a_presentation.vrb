@@ -1,0 +1,9 @@
+\frametitle{Problem}
+Given 2D RGB images with people in them, output a set of coordinates in pixel space corresponding to the joint locations of a single person in the image.
+
+\vspace{10mm}
+Motivations
+\begin{enumerate}
+\item Feature extract for high level learning (activity recognition)
+\item Aid inference in robotic / human interaction
+\end{enumerate}

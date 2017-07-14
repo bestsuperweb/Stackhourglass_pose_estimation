@@ -1,0 +1,163 @@
+\documentclass[12pt]{article}
+
+\usepackage{tikz}
+
+%used for drawing flow chart
+\usepackage{tikz}
+\usetikzlibrary{shapes,arrows,positioning,fit,calc}
+
+
+\begin{document}
+
+\title{Pose Estimation as Sequences \\ \small Research Proposal}
+\author{Matthew Chen\\
+  \small \vspace{-2mm} Department of Computer Science\\
+  \small \vspace{-2mm} Stanford University\\
+  \small mcc17@stanford.edu}
+\date{}
+\maketitle
+
+\section{Problem}
+
+For this project we will work on models for estimating single human pose in RGB images. Recent work have used CNN techniques to achieve new state of the art results. DeepPose framed the problem as a regression problem where joint coordinates were output from a CNN as a offset from an anchor point and a cascade of networks to refine the predictions \cite{toshev2014deeppose}. Another method in \cite{carreira2015human} iteratively refined an initial prior pose to match the pose in the picture by iterating on error offsets for joints until convergence. Deepcut presented the problem as optimizing a global objective where CNNs were used to define unary probabilities for nodes in a PGM \cite{pishchulin2015deepcut}. This approach is unique in that it allows for pose estimation of multiple people in the image. More recent methods aim to include both local and global features into a single network with differentiable layers to optimize a joint objective \cite{wei2016convolutional} \cite{newell2016stacked}. For this project we will model the dependencies between joints in the pose with an Long-Short Term Memory (LSTM) model.
+
+\section{Dataset}
+
+We will be using the MPII human pose estimation dataset which is composed of around 25,000 images annotated with human poses. The poses take the form of pixels coordinates which correspond to a fixed number of joints for a given person in an image. Our goal would be to train a model which takes as input a given image with a single person and outputs their corresponding joint coordinates.
+
+\section{Technical Plan}
+
+
+
+\subsection{Base Model}
+
+In our approach we aim to model dependencies between joints explicitly by modelling the pose as a sequence of coordinates. The inspiration for this approach is the relative success of image captioning models. In such models a CNN is used to extract global image features and generates a caption based on word embeddings. The dependencies between words is essential in these model to generate coherent sentence structures.
+
+Our approach builds on this idea by modelling the pose parameters as a coherent full body pose. In our LSTM network we will set a fixed sequence of joint locations as the output and extract these locations based on image features and the hidden state encoded by the LSTM. An illustration of the proposed method is below. A CNN is used to extract features from the image which is then fed into an LSTM which is able to output joint coordinates in pixel space.\\
+
+
+Notes : Possible deconvolution layers between lstm and prediction components to generate heat maps instead of .
+
+%define flowchart elements
+\tikzstyle{pipe} = [rectangle, draw, fill=orange!30, rounded corners, text width=4.5em, text height=2em, text badly centered, node distance=5.5em, inner sep=0pt]
+\tikzstyle{line} = [draw, -latex']
+
+\begin{center}
+\begin{tikzpicture}
+\node[pipe] (img) {Image};
+\node[pipe, right of=img] (CNN) {CNN};
+\node[pipe, right of=CNN] (lstm1) {LSTM};
+\node[pipe, right of=lstm1] (lstm2) {LSTM};
+\node[pipe, right of=lstm2] (lstm3) {LSTM};
+
+\node[pipe, above of=lstm1] (head) {Head};
+\node[pipe, above of=lstm2] (sh1) {Shoulder1};
+\node[pipe, above of=lstm3] (sh2) {Shoulder2};
+
+
+\path[line] (img)--(CNN);
+\path[line] (CNN)--(lstm1);
+\path[line] (lstm1)--(lstm2);
+\path[line] (lstm2)--(lstm3);
+
+\path[line] (lstm1)--(head);
+\path[line] (lstm2)--(sh1);
+\path[line] (lstm3)--(sh2);
+\end{tikzpicture}
+\end{center}
+
+
+\subsection{Extension 1 - Attention}
+In this extension we aim to get finer grain features, which should increase our networks prediction accuracy, by incorporating a soft attention model.\\
+
+\begin{center}
+\begin{tikzpicture}
+\node[pipe] (lstm1) {Pose LSTM};
+\node[pipe, right of=lstm1] (lstm2) {Pose LSTM};
+\node[pipe, right of=lstm2] (lstm3) {Pose LSTM};
+
+\node[pipe, below of=lstm1] (attn1) {Attention LSTM};
+\node[pipe, below of=lstm2] (attn2) {Attention LSTM};
+\node[pipe, below of=lstm3] (attn3) {Attention LSTM};
+\node[pipe, below of=attn2] (CNN) {CNN};
+\node[pipe, below of=CNN] (img) {Image};
+
+
+\node[pipe, above of=lstm1] (head) {Head};
+\node[pipe, above of=lstm2] (sh1) {Shoulder1};
+\node[pipe, above of=lstm3] (sh2) {Shoulder2};
+
+
+\path[line] (img)--(CNN);
+\path[line] (CNN)--(attn1);
+\path[line] (CNN)--(attn2);
+\path[line] (CNN)--(attn3);
+
+\path[line] (attn1)--(attn2);
+\path[line] (attn2)--(attn3);
+
+
+\path[line] (attn1)--(lstm1);
+\path[line] (attn2)--(lstm2);
+\path[line] (attn3)--(lstm3);
+
+\path[line] (lstm1)--(lstm2);
+\path[line] (lstm2)--(lstm3);
+
+\path[line] (lstm1)--(head);
+\path[line] (lstm2)--(sh1);
+\path[line] (lstm3)--(sh2);
+
+\end{tikzpicture}
+\end{center}
+
+\subsection{Extension 2 - Multi-person}
+In this extension we aim to generalize the base model, which solves the single person pose estimation problem, to one which solves the multi-person pose estimation problem. We would do this by modelling the pose of multiple people as more terms in the sequence for the LSTM.\\
+
+\begin{tikzpicture}
+\node[pipe] (img) {Image};
+\node[pipe, right of=img] (CNN) {CNN};
+\node[pipe, right of=CNN] (lstm1) {LSTM};
+\node[pipe, right of=lstm1] (lstm2) {LSTM};
+\node[pipe, right of=lstm2] (lstm3) {LSTM};
+
+\node[pipe, above of=lstm1] (head) {Pose 1};
+\node[pipe, above of=lstm2] (sh1) {End Tag};
+\node[pipe, above of=lstm3] (sh2) {Pose 2};
+
+
+\path[line] (img)--(CNN);
+\path[line] (CNN)--(lstm1);
+\path[line] (lstm1)--(lstm2);
+\path[line] (lstm2)--(lstm3);
+
+\path[line] (lstm1)--(head);
+\path[line] (lstm2)--(sh1);
+\path[line] (lstm3)--(sh2);
+\end{tikzpicture}
+
+
+\subsection{Extension 3 - Semi-supervised Learning}
+
+In this extension we augment our annotated data with unlabeled data using a variational autoencoder method where our base model serves as the bottleneck layer. Our classifier will serve as the encoder portion of the architecture while we would additionally need to train a generative model which would give us the probability of the original image given the latent state (which in this case would be the pose prediction). The general idea is that the generative model would theoretically act as a regularizer which would give lower weights on incorrect poses which are unable to generate correct images. Not clear that this would work given the high dimensionality of the image space but just an idea for a semi-supervised approach.\\
+
+\begin{center}
+\begin{tikzpicture}
+\node[pipe] (img) {Image};
+\node[pipe, right of=img] (CNN) {Encoder};
+\node[pipe, right of=CNN] (lstm1) {Pose};
+\node[pipe, right of=lstm1] (lstm2) {Decoder};
+\node[pipe, right of=lstm2] (lstm3) {Image};
+
+\path[line] (img)--(CNN);
+\path[line] (CNN)--(lstm1);
+\path[line] (lstm1)--(lstm2);
+\path[line] (lstm2)--(lstm3);
+\end{tikzpicture}
+\end{center}
+
+\nocite{*}
+\bibliographystyle{ieee}
+\bibliography{proposal}
+
+\end{document}

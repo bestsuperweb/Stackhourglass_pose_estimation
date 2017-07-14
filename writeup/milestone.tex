@@ -1,0 +1,95 @@
+\documentclass[12pt]{article}
+
+\usepackage{tikz}
+
+%used for drawing flow chart
+\usepackage{tikz}
+\usetikzlibrary{shapes,arrows,positioning,fit,calc}
+
+
+\begin{document}
+
+\title{Pose Estimation as Sequences \\ \small CS231A Project Proposal}
+\author{Matthew Chen\\
+  \small \vspace{-2mm} Department of Computer Science\\
+  \small \vspace{-2mm} Stanford University\\
+  \small mcc17@stanford.edu
+  \and
+  Melvin Low\\
+  \small \vspace{-2mm} Department of Computer Science\\
+  \small \vspace{-2mm} Stanford University\\
+  \small mwlow@stanford.edu}
+
+\date{}
+\maketitle
+
+\section{Problem}
+
+
+Pose estimation has been a long studied problem in computer vision as it provides information which is essential for interaction in a social environment. For instance understanding of pose can be a important input in activity recognition and motion planning, leading to more accurate models of human activity. In the past the state of the art models involved variants of the deformable parts model. In these models fast part detectors were convolved across the image and a candidate output was chosen which presented a coherent joint configuration \cite{felzenszwalb2010object}.
+
+More recently, building on the success of convolutional neural networks in computer vision, several papers have used CNN techniques to achieve new state of the art results \cite{toshev2014deeppose} \cite{carreira2015human} \cite{pishchulin2015deepcut} \cite{wei2016convolutional} \cite{newell2016stacked}. For this project we model the dependencies between joints in the pose with an Long-Short Term Memory (LSTM) model. We are using the MPII human pose estimation dataset which is composed of around 25,000 images annotated with human poses. The poses take the form of pixels coordinates which correspond to a fixed number of joints for a given person in an image. Our goal would be to train a model which takes as input a given image with a single person and outputs their corresponding joint coordinates in image space.
+
+
+\section{Technical Plan}
+
+Instead of estimating the complete human pose in one shot we model the pose as a sequence of joint coordinates. Using this structure will hopefully allow us to better model the dependencies between joints. Our approach builds on this ideas found in the domain of image captioning where the task to is construct a coherent sentence to describe an image. Here we aim train a model to generate a coherent full body pose from an image. In our LSTM network we will set a fixed sequence of joint locations as the output and extract these locations based on image features and the hidden state encoded by the LSTM. A illustration of our proposed model is outlined in Figure \ref{model_diag}.
+
+%define flowchart elements
+\tikzstyle{pipe} = [rectangle, draw, fill=orange!30, rounded corners, text width=4.5em, text height=2em, text badly centered, node distance=7em, inner sep=0pt]
+\tikzstyle{line} = [draw, -latex']
+
+
+\begin{figure}
+\begin{tikzpicture}
+\node[pipe] (img) {Image};
+\node[pipe, right of=img] (CNN) {CNN};
+\node[pipe, right of=CNN] (lstm1) {LSTM};
+\node[pipe, right of=lstm1] (lstm2) {LSTM};
+\node[pipe, right of=lstm2] (lstm3) {LSTM};
+
+\node[pipe, above of=lstm1] (head) {Head};
+\node[pipe, above of=lstm2] (sh1) {Shoulder1};
+\node[pipe, above of=lstm3] (sh2) {Shoulder2};
+
+
+\path[line] (img)--(CNN);
+\path[line] (CNN)--(lstm1);
+\path[line] (lstm1)--(lstm2);
+\path[line] (lstm2)--(lstm3);
+
+\path[line] (lstm1)--(head);
+\path[line] (lstm2)--(sh1);
+\path[line] (lstm3)--(sh2);
+
+\end{tikzpicture}
+\label{model_diag}
+\caption{Model diagram. A CNN is used to extract featuers from the image which is then fed into an LSTM which is able to output joint coordinates in pixel space.}
+\end{figure}
+
+\section{Milestones Achieved}
+
+So far we have made progress in creating our baseline model and a first pass at a structure which models the pose as a sequence. We also completed one iteration of looking at the errors which were produced by our model and are working on methods to mitigate those errors. In this case the main error originated from only one person in images of multiple people having ground truth annotations. Concretely we have completed the following milestones outlined in our proposal
+
+\begin{enumerate}
+\item Downloaded and create processing scripts for MPII data
+\item Incorporated LSTM to model dependencies between joints
+\item Completed baseline regression model
+\end{enumerate}
+
+\section{Milestones Remaining}
+
+Below are our remaining milestones as well as the dates that we are aiming to complete them by.
+
+\begin{itemize}
+\item 5/20 - Data Augmentation
+\item 5/27 - Evaluate results
+\item 5/27 - Error Analysis
+\item 5/30 - Complete Writeup
+\end{itemize}
+
+\nocite{*}
+\bibliographystyle{ieee}
+\bibliography{proposal}
+
+\end{document}
